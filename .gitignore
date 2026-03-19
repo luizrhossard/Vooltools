@@ -1,0 +1,43 @@
+# Java / Maven
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/.mvn/wrapper/maven-wrapper.jar
+.mvn/wrapper/maven-wrapper.jar
+**/*.class
+
+# Node.js / React
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/.env.*.local
+frontend/*.tsbuildinfo
+
+# Docker
+.docker/
+# postgres_data/ # Added as a safety but it's usually inside docker volumes
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Enviroment files
+.env
+.env.production
+.env.development
+# Excluindo os .env do frontend que criamos que podem conter dados sensíveis
+frontend/.env
+frontend/.env.development
+frontend/.env.production
+
+# SQL
+reset-db.sql
+# postgres_data handled by volumes in docker-compose, but if it were a local folder:
+postgres_data/
+
+# Logs
+*.log

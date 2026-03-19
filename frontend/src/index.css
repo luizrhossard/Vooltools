@@ -1,0 +1,63 @@
+@import url('https://fonts.googleapis.com/css2?family=Karla:ital,wght@0,200..800;1,200..800&display=swap');
+@import "tailwindcss";
+
+/* Variáveis Globais — Mesmas cores do site principal */
+:root {
+    /* Cores Principais */
+    --forest:      #1B4332;
+    --forest-d:    #0D2B1E;
+    --forest-l:    #2D6A4F;
+    --forest-xl:   #40916C;
+    --cream:       #F5F0E8;
+    --cream-d:     #EDE6D5;
+    --cream-dk:    #D4C9B0;
+    --red:         #C0392B;
+    --red-d:       #96281B;
+    --red-l:       #E74C3C;
+    --gold:        #D4A017;
+    --gold-d:      #B8860B;
+    --gold-l:      #F0C040;
+
+    /* Neutros */
+    --white:       #FFFFFF;
+    --off-white:   #FAFAF7;
+    --gray-bg:     #F0EDE6;
+    --gray-lt:     #DDD8CE;
+    --gray-md:     #9E9587;
+    --gray-dk:     #5C5649;
+    --charcoal:    #2C2B29;
+    --black:       #1A1917;
+}
+
+/* Admin Loading Screen */
+.loading-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    gap: 16px;
+    background: linear-gradient(135deg, #1B4332 0%, #0D2B1E 50%, #2D6A4F 100%);
+    font-family: 'Karla', sans-serif;
+}
+
+.spinner-large {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #D4C9B0;
+    border-top-color: #D4A017;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loading-screen p {
+    color: #F5F0E8;
+    font-size: 16px;
+    font-weight: 600;
+}

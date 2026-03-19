@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: loja-ferramentas-db
+    environment:
+      POSTGRES_USER: ${DB_USER:-tools_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-tools_pass}
+      POSTGRES_DB: ${DB_NAME:-loja_ferramentas}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - loja-network
+
+  backend:
+    build:
+      context: ./backend
+    container_name: loja-ferramentas-api
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-tools_user}
+      DB_PASSWORD: ${DB_PASSWORD:-tools_pass}
+      DB_NAME: ${DB_NAME:-loja_ferramentas}
+    depends_on:
+      - postgres
+    networks:
+      - loja-network
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: loja-ferramentas-web
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - loja-network
+
+volumes:
+  postgres_data:
+
+networks:
+  loja-network:
+    driver: bridge
