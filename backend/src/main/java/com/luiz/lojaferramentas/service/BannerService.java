@@ -41,6 +41,9 @@ public class BannerService {
         existing.setActive(updated.getActive());
         existing.setStartDate(updated.getStartDate());
         existing.setEndDate(updated.getEndDate());
+        existing.setShowPriceBadge(updated.getShowPriceBadge() != null ? updated.getShowPriceBadge() : true);
+        existing.setPriceBadgePrefix(updated.getPriceBadgePrefix());
+        existing.setPriceBadgeValue(updated.getPriceBadgeValue());
         return bannerRepository.save(existing);
     }
 

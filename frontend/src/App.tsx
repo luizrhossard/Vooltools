@@ -1,4 +1,4 @@
-﻿import './App.css';
+import './App.css';
 import { useCallback, useMemo, useState, useEffect } from 'react';
 import { useCart } from './contexts/CartContext';
 import { CartDrawer } from './components/CartDrawer';
@@ -84,7 +84,7 @@ function App() {
 
   const dealProduct = useMemo(() => {
     if (products.length === 0) return null;
-    return products[0];
+    return products.find(p => p.featured) || products[0];
   }, [products]);
 
   const visibleBanners = useMemo(() => {
@@ -446,10 +446,12 @@ function App() {
                       )}
                     </div>
                     <div className="hs-img-side">
-                      <div className="hs-badge-price">
-                        <span className="hsbp-from">a partir de</span>
-                        <span className="hsbp-val">R$&nbsp;{heroPrice}</span>
-                      </div>
+                      {banner.showPriceBadge !== false && (
+                        <div className="hs-badge-price">
+                          <span className="hsbp-from">{banner.priceBadgePrefix || 'a partir de'}</span>
+                          <span className="hsbp-val">{banner.priceBadgeValue || `R$ ${heroPrice}`}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))

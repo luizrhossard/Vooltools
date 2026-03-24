@@ -14,6 +14,7 @@ export interface Product {
     sku: string;
     imageUrl?: string;
     category: Category;
+    featured?: boolean;
 }
 
 export interface AdminUser {
@@ -33,6 +34,9 @@ export interface Banner {
     active: boolean;
     startDate?: string;
     endDate?: string;
+    showPriceBadge?: boolean;
+    priceBadgePrefix?: string;
+    priceBadgeValue?: string;
 }
 
 export interface DashboardStats {

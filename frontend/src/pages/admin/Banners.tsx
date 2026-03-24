@@ -17,6 +17,9 @@ export function AdminBanners() {
         active: true,
         startDate: '',
         endDate: '',
+        showPriceBadge: true,
+        priceBadgePrefix: '',
+        priceBadgeValue: '',
     });
 
     useEffect(() => {
@@ -46,6 +49,9 @@ export function AdminBanners() {
                 active: banner.active,
                 startDate: banner.startDate || '',
                 endDate: banner.endDate || '',
+                showPriceBadge: banner.showPriceBadge !== false,
+                priceBadgePrefix: banner.priceBadgePrefix || '',
+                priceBadgeValue: banner.priceBadgeValue || '',
             });
         } else {
             setEditingBanner(null);
@@ -58,6 +64,9 @@ export function AdminBanners() {
                 active: true,
                 startDate: '',
                 endDate: '',
+                showPriceBadge: true,
+                priceBadgePrefix: '',
+                priceBadgeValue: '',
             });
         }
         setShowModal(true);
@@ -75,6 +84,9 @@ export function AdminBanners() {
             active: true,
             startDate: '',
             endDate: '',
+            showPriceBadge: true,
+            priceBadgePrefix: '',
+            priceBadgeValue: '',
         });
     };
 
@@ -90,6 +102,9 @@ export function AdminBanners() {
             active: formData.active,
             startDate: formData.startDate || null,
             endDate: formData.endDate || null,
+            showPriceBadge: formData.showPriceBadge,
+            priceBadgePrefix: formData.priceBadgePrefix || null,
+            priceBadgeValue: formData.priceBadgeValue || null,
         };
 
         try {
@@ -303,6 +318,42 @@ export function AdminBanners() {
                                     />
                                 </div>
                             </div>
+
+                            <div className="form-row">
+                                <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: '10px' }}>
+                                    <label className="checkbox-label" style={{ marginBottom: 0 }}>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.showPriceBadge}
+                                            onChange={(e) => setFormData({ ...formData, showPriceBadge: e.target.checked })}
+                                        />
+                                        <span>Mostrar Badge de Preço</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            {formData.showPriceBadge && (
+                                <div className="form-row">
+                                    <div className="form-group">
+                                        <label>Texto do Badge (opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={formData.priceBadgePrefix}
+                                            onChange={(e) => setFormData({ ...formData, priceBadgePrefix: e.target.value })}
+                                            placeholder="Ex: A partir de"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>Valor do Badge (opcional)</label>
+                                        <input
+                                            type="text"
+                                            value={formData.priceBadgeValue}
+                                            onChange={(e) => setFormData({ ...formData, priceBadgeValue: e.target.value })}
+                                            placeholder="Ex: R$ 680,90"
+                                        />
+                                    </div>
+                                </div>
+                            )}
 
                             {formData.imageUrl && (
                                 <div className="image-preview">

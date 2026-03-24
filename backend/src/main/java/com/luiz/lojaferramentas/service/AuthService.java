@@ -4,6 +4,9 @@ import com.luiz.lojaferramentas.config.JwtUtil;
 import com.luiz.lojaferramentas.domain.AdminUser;
 import com.luiz.lojaferramentas.dto.AuthResponse;
 import com.luiz.lojaferramentas.dto.LoginRequest;
+import com.luiz.lojaferramentas.exception.InvalidCredentialsException;
+import com.luiz.lojaferramentas.exception.ResourceConflictException;
+import com.luiz.lojaferramentas.exception.ResourceNotFoundException;
 import com.luiz.lojaferramentas.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -19,10 +22,10 @@ public class AuthService {
 
     public AuthResponse login(LoginRequest request) {
         AdminUser user = adminUserRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("Credenciais inválidas"));
+                .orElseThrow(() -> new InvalidCredentialsException("Credenciais invalidas"));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Credenciais inválidas");
+            throw new InvalidCredentialsException("Credenciais invalidas");
         }
 
         String token = jwtUtil.generateToken(user.getEmail(), user.getRole());
@@ -39,13 +42,13 @@ public class AuthService {
 
     public void register(AdminUser user) {
         if (adminUserRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("E-mail já cadastrado");
+            throw new ResourceConflictException("E-mail ja cadastrado");
         }
         adminUserRepository.save(user);
     }
 
     public AdminUser getCurrentUser(String email) {
         return adminUserRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario nao encontrado"));
     }
 }

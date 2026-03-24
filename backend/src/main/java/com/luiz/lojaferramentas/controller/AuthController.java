@@ -4,6 +4,9 @@ import com.luiz.lojaferramentas.domain.AdminUser;
 import com.luiz.lojaferramentas.dto.AuthResponse;
 import com.luiz.lojaferramentas.dto.LoginRequest;
 import com.luiz.lojaferramentas.service.AuthService;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -30,7 +33,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<Void> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequest request) {
         AdminUser user = AdminUser.builder()
                 .username(request.getUsername())
                 .email(request.getEmail())
@@ -54,9 +57,20 @@ public class AuthController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class RegisterRequest {
+        @NotBlank
+        @Size(min = 3, max = 50)
         private String username;
+
+        @NotBlank
+        @Email
         private String email;
+
+        @NotBlank
+        @Size(min = 3, max = 100)
         private String name;
+
+        @NotBlank
+        @Size(min = 8, max = 100)
         private String password;
     }
 }

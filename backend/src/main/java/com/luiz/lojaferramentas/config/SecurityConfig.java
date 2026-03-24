@@ -31,8 +31,10 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             )
             .authorizeHttpRequests(auth -> auth
-                // Public endpoints - authentication
-                .requestMatchers("/api/auth/**").permitAll()
+                // Public authentication endpoint
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Protected authentication endpoints
+                .requestMatchers(HttpMethod.POST, "/api/auth/register").hasRole("ADMIN")
                 // Public endpoints - store browsing
                 .requestMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/categories/**").permitAll()
@@ -46,7 +48,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/categories").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/categories/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/categories/**").hasRole("ADMIN")
-                .requestMatchers("/api/banners/**").hasRole("ADMIN")
+                .requestMatchers("/api/banners", "/api/banners/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

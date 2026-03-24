@@ -2,6 +2,7 @@ package com.luiz.lojaferramentas.config;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -12,11 +13,18 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${jwt.secret:mySecretKeyForJwtTokenGenerationThatShouldBeAtLeast256BitsLongForSecurity}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:86400000}")
     private long jwtExpiration;
+
+    @PostConstruct
+    public void validateConfig() {
+        if (jwtSecret == null || jwtSecret.length() < 32) {
+            throw new IllegalStateException("jwt.secret deve ter ao menos 32 caracteres.");
+        }
+    }
 
     private SecretKey getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes(StandardCharsets.UTF_8);

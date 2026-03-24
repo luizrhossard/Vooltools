@@ -17,6 +17,7 @@ export function AdminProducts() {
         sku: '',
         imageUrl: '',
         categoryId: '',
+        featured: false,
     });
 
     useEffect(() => {
@@ -55,6 +56,7 @@ export function AdminProducts() {
                 sku: product.sku,
                 imageUrl: product.imageUrl || '',
                 categoryId: product.category.id.toString(),
+                featured: product.featured || false,
             });
         } else {
             setEditingProduct(null);
@@ -66,6 +68,7 @@ export function AdminProducts() {
                 sku: '',
                 imageUrl: '',
                 categoryId: categories[0]?.id.toString() || '',
+                featured: false,
             });
         }
         setShowModal(true);
@@ -82,6 +85,7 @@ export function AdminProducts() {
             sku: '',
             imageUrl: '',
             categoryId: '',
+            featured: false,
         });
     };
 
@@ -96,6 +100,7 @@ export function AdminProducts() {
             sku: formData.sku,
             imageUrl: formData.imageUrl,
             category: { id: parseInt(formData.categoryId) },
+            featured: formData.featured,
         };
 
         try {
@@ -294,6 +299,17 @@ export function AdminProducts() {
                                         placeholder="https://..."
                                     />
                                 </div>
+                            </div>
+
+                            <div className="form-group">
+                                <label className="checkbox-label" style={{ marginTop: '10px' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={formData.featured}
+                                        onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                                    />
+                                    <span>Produto em Destaque (Oferta do Dia)</span>
+                                </label>
                             </div>
 
                             <div className="modal-actions">

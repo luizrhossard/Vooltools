@@ -36,6 +36,7 @@ public class ProductService {
         existing.setSku(updated.getSku());
         existing.setImageUrl(updated.getImageUrl());
         existing.setCategory(updated.getCategory());
+        existing.setFeatured(updated.getFeatured() != null ? updated.getFeatured() : false);
         return productRepository.save(existing);
     }
 

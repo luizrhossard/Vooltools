@@ -24,10 +24,10 @@ public class Banner {
     @Column(length = 500)
     private String subtitle;
 
-    @Column(name = "image_url", length = 255)
+    @Column(name = "image_url", length = 2000)
     private String imageUrl;
 
-    @Column(name = "link_url", length = 255)
+    @Column(name = "link_url", length = 2000)
     private String linkUrl;
 
     @Column(name = "display_order")
@@ -41,4 +41,13 @@ public class Banner {
 
     @Column(name = "end_date")
     private LocalDate endDate;
+
+    @Column(name = "show_price_badge")
+    private Boolean showPriceBadge = true;
+
+    @Column(name = "price_badge_prefix", length = 100)
+    private String priceBadgePrefix;
+
+    @Column(name = "price_badge_value", length = 100)
+    private String priceBadgeValue;
 }
