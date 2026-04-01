@@ -41,3 +41,11 @@ postgres_data/
 
 # Logs
 *.log
+
+# Text and log artifacts
+*.txt
+!README*
+!LICENSE*
+!LICENCE*
+!COPYING*
+backend_logs*
