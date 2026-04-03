@@ -42,6 +42,11 @@ postgres_data/
 # Logs
 *.log
 
+# Docker secrets — arquivos reais nunca devem ser commitados
+secrets/*.txt
+!secrets/*.txt.example
+!secrets/README.md
+
 # Text and log artifacts
 *.txt
 !README*
