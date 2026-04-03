@@ -1,12 +1,18 @@
+import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { isTokenExpired } from '../../lib/authToken';
+import { Unauthorized } from './Unauthorized';
 
 interface ProtectedRouteProps {
-    children: React.ReactNode;
+    children: ReactNode;
+    requiredRole?: string;
 }
 
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
-    const { isAuthenticated, isLoading } = useAdminAuth();
+export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
+    const { isAuthenticated, isLoading, token, hasRole } = useAdminAuth();
+
+    const isTokenInvalid = !token || isTokenExpired(token);
 
     if (isLoading) {
         return (
@@ -17,8 +23,12 @@ export function ProtectedRoute({ children }: ProtectedRouteProps) {
         );
     }
 
-    if (!isAuthenticated) {
-        return <Navigate to="/admin/login" replace />;
+    if (!isAuthenticated || isTokenInvalid) {
+        return <Navigate to="/login" replace />;
+    }
+
+    if (requiredRole && !hasRole(requiredRole)) {
+        return <Unauthorized />;
     }
 
     return <>{children}</>;

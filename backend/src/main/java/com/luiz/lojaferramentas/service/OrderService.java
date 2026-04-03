@@ -3,11 +3,16 @@ package com.luiz.lojaferramentas.service;
 import com.luiz.lojaferramentas.domain.Order;
 import com.luiz.lojaferramentas.domain.OrderItem;
 import com.luiz.lojaferramentas.domain.Product;
-import com.luiz.lojaferramentas.dto.OrderRequestDTO;
 import com.luiz.lojaferramentas.dto.OrderItemRequestDTO;
+import com.luiz.lojaferramentas.dto.OrderRequestDTO;
+import com.luiz.lojaferramentas.dto.OrderResponseDTO;
+import com.luiz.lojaferramentas.exception.ResourceNotFoundException;
+import com.luiz.lojaferramentas.exception.ValidationException;
+import com.luiz.lojaferramentas.mapper.OrderMapper;
 import com.luiz.lojaferramentas.repository.OrderRepository;
 import com.luiz.lojaferramentas.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,52 +24,47 @@ public class OrderService {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
+    private final OrderMapper orderMapper;
 
-    // O @Transactional garante que se der erro no meio (ex: estoque insuficiente),
-    // ele dá Rollback em tudo e não salva o pedido quebrado.
+    @PreAuthorize("permitAll()")
     @Transactional
-    public Order createOrder(OrderRequestDTO request) {
+    public OrderResponseDTO createOrder(OrderRequestDTO request) {
+        if (request.items() == null || request.items().isEmpty()) {
+            throw new ValidationException("O pedido deve conter ao menos um item.");
+        }
 
         Order order = Order.builder()
                 .customerName(request.customerName())
                 .customerEmail(request.customerEmail())
-                .status("CONFIRMED") // Já confirmamos direto para simplificar
+                .status("CONFIRMED")
                 .build();
 
         BigDecimal total = BigDecimal.ZERO;
 
         for (OrderItemRequestDTO itemDto : request.items()) {
             Product product = productRepository.findById(itemDto.productId())
-                    .orElseThrow(() -> new RuntimeException("Produto não encontrado: " + itemDto.productId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Produto nao encontrado: " + itemDto.productId()));
 
-            // Verifica estoque (simulação simples)
             if (product.getStockQuantity() < itemDto.quantity()) {
-                throw new RuntimeException("Estoque insuficiente para o produto: " + product.getName());
+                throw new ValidationException("Estoque insuficiente para o produto: " + product.getName());
             }
 
-            // Baixa o estoque do produto
             product.setStockQuantity(product.getStockQuantity() - itemDto.quantity());
             productRepository.save(product);
 
-            // Cria o item do pedido
             OrderItem orderItem = OrderItem.builder()
                     .order(order)
                     .product(product)
                     .quantity(itemDto.quantity())
-                    .unitPrice(product.getPrice()) // Salva o preço da ferramenta hoje
+                    .unitPrice(product.getPrice())
                     .build();
 
             order.getItems().add(orderItem);
-
-            // Soma no total: quantidade * preço
-            BigDecimal itemTotal = product.getPrice().multiply(BigDecimal.valueOf(itemDto.quantity()));
-            total = total.add(itemTotal);
+            total = total.add(product.getPrice().multiply(BigDecimal.valueOf(itemDto.quantity())));
         }
 
         order.setTotalAmount(total);
-
-        // O Hibernate salvará o Order e os OrderItems juntos por causa do
-        // CascadeType.ALL
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        return orderMapper.toDto(savedOrder);
     }
 }

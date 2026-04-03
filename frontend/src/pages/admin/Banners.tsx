@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../lib/api';
+import { ApiErrorNotice } from '../../components/ApiErrorNotice';
+import { apiClient, getApiErrorMessage } from '../../lib/apiClient';
 import type { Banner } from '../../types/product';
 import './Banners.css';
 
 export function AdminBanners() {
     const [banners, setBanners] = useState<Banner[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
     const [formData, setFormData] = useState({
@@ -27,11 +29,12 @@ export function AdminBanners() {
     }, []);
 
     const loadBanners = async () => {
+        setErrorMessage(null);
         try {
-            const response = await api.get('/banners');
+            const response = await apiClient.get<Banner[]>('/banners');
             setBanners(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar banners:', error);
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao carregar banners.'));
         } finally {
             setIsLoading(false);
         }
@@ -92,13 +95,14 @@ export function AdminBanners() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage(null);
 
         const payload = {
             title: formData.title,
             subtitle: formData.subtitle,
             imageUrl: formData.imageUrl,
             linkUrl: formData.linkUrl,
-            displayOrder: formData.displayOrder ? parseInt(formData.displayOrder) : null,
+            displayOrder: formData.displayOrder ? parseInt(formData.displayOrder, 10) : null,
             active: formData.active,
             startDate: formData.startDate || null,
             endDate: formData.endDate || null,
@@ -109,39 +113,39 @@ export function AdminBanners() {
 
         try {
             if (editingBanner) {
-                await api.put(`/banners/${editingBanner.id}`, payload);
+                await apiClient.put(`/banners/${editingBanner.id}`, payload);
             } else {
-                await api.post('/banners', payload);
+                await apiClient.post('/banners', payload);
             }
-            loadBanners();
+            await loadBanners();
             closeModal();
-        } catch (error) {
-            console.error('Erro ao salvar banner:', error);
-            alert('Erro ao salvar banner. Verifique os dados e tente novamente.');
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao salvar banner. Verifique os dados e tente novamente.'));
         }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm('Tem certeza que deseja excluir este banner?')) return;
+        setErrorMessage(null);
 
         try {
-            await api.delete(`/banners/${id}`);
-            loadBanners();
-        } catch (error) {
-            console.error('Erro ao excluir banner:', error);
-            alert('Erro ao excluir banner.');
+            await apiClient.delete(`/banners/${id}`);
+            await loadBanners();
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao excluir banner.'));
         }
     };
 
     const toggleActive = async (id: number, currentActive: boolean) => {
+        setErrorMessage(null);
         try {
             const banner = banners.find(b => b.id === id);
             if (banner) {
-                await api.put(`/banners/${id}`, { ...banner, active: !currentActive });
-                loadBanners();
+                await apiClient.put(`/banners/${id}`, { ...banner, active: !currentActive });
+                await loadBanners();
             }
-        } catch (error) {
-            console.error('Erro ao atualizar banner:', error);
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao atualizar banner.'));
         }
     };
 
@@ -166,6 +170,10 @@ export function AdminBanners() {
                     Novo Banner
                 </button>
             </div>
+
+            {errorMessage ? (
+                <ApiErrorNotice message={errorMessage} onRetry={() => window.location.reload()} />
+            ) : null}
 
             <div className="banners-grid">
                 {banners.map((banner) => (

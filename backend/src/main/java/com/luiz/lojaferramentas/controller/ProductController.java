@@ -1,9 +1,12 @@
 package com.luiz.lojaferramentas.controller;
 
-import com.luiz.lojaferramentas.domain.Product;
+import com.luiz.lojaferramentas.dto.ProductDTO;
+import com.luiz.lojaferramentas.dto.ProductRequestDTO;
 import com.luiz.lojaferramentas.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,29 +19,29 @@ public class ProductController {
     private final ProductService productService;
 
     @GetMapping
-    public List<Product> listAll() {
-        return productService.listAll();
+    public ResponseEntity<List<ProductDTO>> listAll() {
+        return ResponseEntity.ok(productService.listAll());
     }
 
     @GetMapping("/{id}")
-    public Product getById(@PathVariable Integer id) {
-        return productService.getById(id);
+    public ResponseEntity<ProductDTO> getById(@PathVariable Integer id) {
+        return ResponseEntity.ok(productService.getById(id));
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Product create(@RequestBody Product product) {
-        return productService.create(product);
+    public ResponseEntity<ProductDTO> create(@Valid @RequestBody ProductRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productService.create(request));
     }
 
     @PutMapping("/{id}")
-    public Product update(@PathVariable Integer id, @RequestBody Product product) {
-        return productService.update(id, product);
+    public ResponseEntity<ProductDTO> update(@PathVariable Integer id,
+                                             @Valid @RequestBody ProductRequestDTO request) {
+        return ResponseEntity.ok(productService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Integer id) {
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         productService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

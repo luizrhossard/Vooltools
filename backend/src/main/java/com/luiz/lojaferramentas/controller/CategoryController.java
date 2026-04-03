@@ -1,9 +1,12 @@
 package com.luiz.lojaferramentas.controller;
 
-import com.luiz.lojaferramentas.domain.Category;
+import com.luiz.lojaferramentas.dto.CategoryDTO;
+import com.luiz.lojaferramentas.dto.CategoryRequestDTO;
 import com.luiz.lojaferramentas.service.CategoryService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,29 +19,29 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @GetMapping
-    public List<Category> listAll() {
-        return categoryService.listAll();
+    public ResponseEntity<List<CategoryDTO>> listAll() {
+        return ResponseEntity.ok(categoryService.listAll());
     }
 
     @GetMapping("/{id}")
-    public Category getById(@PathVariable Long id) {
-        return categoryService.getById(id);
+    public ResponseEntity<CategoryDTO> getById(@PathVariable Integer id) {
+        return ResponseEntity.ok(categoryService.getById(id));
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public Category create(@RequestBody Category category) {
-        return categoryService.create(category);
+    public ResponseEntity<CategoryDTO> create(@Valid @RequestBody CategoryRequestDTO request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoryService.create(request));
     }
 
     @PutMapping("/{id}")
-    public Category update(@PathVariable Long id, @RequestBody Category category) {
-        return categoryService.update(id, category);
+    public ResponseEntity<CategoryDTO> update(@PathVariable Integer id,
+                                              @Valid @RequestBody CategoryRequestDTO request) {
+        return ResponseEntity.ok(categoryService.update(id, request));
     }
 
     @DeleteMapping("/{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable Integer id) {
         categoryService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }

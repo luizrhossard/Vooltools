@@ -4,7 +4,8 @@ import { useCart } from './contexts/CartContext';
 import { CartDrawer } from './components/CartDrawer';
 import { ProductCard } from './components/ProductCard';
 import { Toast } from './components/Toast';
-import { api } from './lib/api';
+import { ApiErrorNotice } from './components/ApiErrorNotice';
+import { apiClient, getApiErrorMessage } from './lib/apiClient';
 import { sanitizeProductText } from './lib/text';
 import type { Product, Banner } from './types/product';
 
@@ -25,18 +26,22 @@ function App() {
   const [products, setProducts] = useState<Product[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [currentBannerIndex, setCurrentBannerIndex] = useState(0);
 
   useEffect(() => {
+    setIsLoading(true);
+    setLoadError(null);
+
     Promise.all([
-      api.get('/products').then(res => res.data),
-      api.get('/banners/active').then(res => res.data)
+      apiClient.get<Product[]>('/products').then((res) => res.data),
+      apiClient.get<Banner[]>('/banners/active').then((res) => res.data)
     ]).then(([productsData, bannersData]) => {
       setProducts(productsData.map((product: Product) => sanitizeProductText(product)));
       setBanners(bannersData);
       setIsLoading(false);
-    }).catch(err => {
-      console.error('Erro ao carregar dados:', err);
+    }).catch((error: unknown) => {
+      setLoadError(getApiErrorMessage(error, 'Não foi possível carregar os dados da loja.'));
       setIsLoading(false);
     });
   }, []);
@@ -414,6 +419,12 @@ function App() {
       </header>
 
       <main>
+        {loadError && (
+          <section className="cw" style={{ marginTop: '20px' }}>
+            <ApiErrorNotice message={loadError} onRetry={() => window.location.reload()} />
+          </section>
+        )}
+
         {/* --- HERO BANNER + ASIDE --- */}
         <section className="hero-section">
           <div className="cw hero-wrap">

@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import './AdminLayout.css';
 
 interface AdminLayoutProps {
-    children: React.ReactNode;
+    children: ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
@@ -14,7 +15,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
     const handleLogout = () => {
         logout();
-        navigate('/admin/login');
+        navigate('/login');
     };
 
     const navItems = [

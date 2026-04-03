@@ -1,17 +1,110 @@
-version: '3.8'
-
 services:
-  postgres:
+  postgres-dev:
     image: postgres:16-alpine
-    container_name: loja-ferramentas-db
+    container_name: loja-ferramentas-db-dev
+    profiles: ["dev"]
     environment:
+      DB_USER: ${DB_USER:-tools_user}
+      DB_NAME: ${DB_NAME:-loja_ferramentas}
       POSTGRES_USER: ${DB_USER:-tools_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-tools_pass}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME:-loja_ferramentas}
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$DB_USER -d $$DB_NAME"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - loja-network
+
+  backend-dev:
+    image: maven:3.9.6-eclipse-temurin-21-alpine
+    container_name: loja-ferramentas-api-dev
+    profiles: ["dev"]
+    working_dir: /app
+    command: sh -c "apk add --no-cache curl >/dev/null && chmod +x mvnw && ./mvnw spring-boot:run"
+    environment:
+      DB_HOST: postgres-dev
+      DB_PORT: 5432
+      DB_USER: ${DB_USER:-tools_user}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME:-loja_ferramentas}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      APP_ADMIN_BOOTSTRAP_ENABLED: ${APP_ADMIN_BOOTSTRAP_ENABLED:-true}
+      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-admin}
+      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-admin@empresa.com}
+      APP_ADMIN_NAME: ${APP_ADMIN_NAME:-Administrador}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+    volumes:
+      - ./backend:/app
+      - m2_cache:/root/.m2
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-dev:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - loja-network
+
+  frontend-dev:
+    image: node:22-alpine
+    container_name: loja-ferramentas-web-dev
+    profiles: ["dev"]
+    working_dir: /app
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_URL: http://localhost:8080/api
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend-dev:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:5173 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - loja-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: loja-ferramentas-db
+    profiles: ["prod"]
+    environment:
+      DB_USER: ${DB_USER:-tools_user}
+      DB_NAME: ${DB_NAME:-loja_ferramentas}
+      POSTGRES_USER: ${DB_USER:-tools_user}
+      POSTGRES_DB: ${DB_NAME:-loja_ferramentas}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$DB_USER -d $$DB_NAME"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
     networks:
       - loja-network
 
@@ -19,23 +112,40 @@ services:
     build:
       context: ./backend
     container_name: loja-ferramentas-api
-    ports:
-      - "8080:8080"
+    profiles: ["prod"]
+    entrypoint:
+      - sh
+      - -c
+      - export DB_PASSWORD="$(cat /run/secrets/db_password)" &&
+        export JWT_SECRET="$(cat /run/secrets/jwt_secret)" &&
+        java -jar app.jar
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: ${DB_USER:-tools_user}
-      DB_PASSWORD: ${DB_PASSWORD:-tools_pass}
       DB_NAME: ${DB_NAME:-loja_ferramentas}
-      JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
-      APP_ADMIN_BOOTSTRAP_ENABLED: ${APP_ADMIN_BOOTSTRAP_ENABLED:-false}
-      APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME:-}
-      APP_ADMIN_EMAIL: ${APP_ADMIN_EMAIL:-}
-      APP_ADMIN_NAME: ${APP_ADMIN_NAME:-Administrador}
-      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD:-}
+      JWT_REFRESH_EXPIRATION: ${JWT_REFRESH_EXPIRATION:-604800000}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-https://meusite.com}
+      APP_ADMIN_BOOTSTRAP_ENABLED: "false"
+      APP_ADMIN_USERNAME: ""
+      APP_ADMIN_EMAIL: ""
+      APP_ADMIN_NAME: "Administrador"
+      APP_ADMIN_PASSWORD: ""
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    secrets:
+      - db_password
+      - jwt_secret
+    expose:
+      - "8080"
     networks:
       - loja-network
 
@@ -43,15 +153,32 @@ services:
     build:
       context: ./frontend
     container_name: loja-ferramentas-web
+    profiles: ["prod"]
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
     networks:
       - loja-network
 
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  jwt_secret:
+    file: ./secrets/jwt_secret.txt
+
 volumes:
-  postgres_data:
+  postgres_data_dev:
+  postgres_data_prod:
+  m2_cache:
+  frontend_node_modules:
 
 networks:
   loja-network:

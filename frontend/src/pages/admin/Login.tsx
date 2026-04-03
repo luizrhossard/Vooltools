@@ -1,26 +1,28 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { getApiErrorMessage } from '../../lib/apiClient';
 import './Login.css';
 
 export function AdminLogin() {
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const { login } = useAdminAuth();
+    const passwordRef = useRef<HTMLInputElement>(null);
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
         setIsLoading(true);
+        const password = passwordRef.current?.value ?? '';
 
         try {
             await login(email, password);
             navigate('/admin');
-        } catch (err: any) {
-            setError(err.response?.data?.message || 'Erro ao fazer login. Verifique suas credenciais.');
+        } catch (error: unknown) {
+            setError(getApiErrorMessage(error, 'Erro ao fazer login. Verifique suas credenciais.'));
         } finally {
             setIsLoading(false);
         }
@@ -57,8 +59,7 @@ export function AdminLogin() {
                             <input
                                 type="password"
                                 id="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                ref={passwordRef}
                                 placeholder="••••••••"
                                 required
                                 disabled={isLoading}

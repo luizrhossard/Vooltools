@@ -1,7 +1,13 @@
-// src/contexts/AdminAuthContext.tsx
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, type ReactNode } from 'react';
 import type { AdminUser } from '../types/product';
-import { api } from '../lib/api';
+import { apiClient } from '../lib/apiClient';
+import {
+    clearStoredSession,
+    getStoredToken,
+    getStoredUser,
+    setStoredSession,
+} from '../lib/adminSession';
+import { isTokenExpired } from '../lib/authToken';
 
 interface AdminAuthContextType {
     user: AdminUser | null;
@@ -9,42 +15,65 @@ interface AdminAuthContextType {
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
     isAuthenticated: boolean;
+    hasRole: (role: string) => boolean;
     isLoading: boolean;
 }
 
 const AdminAuthContext = createContext<AdminAuthContextType | undefined>(undefined);
 
+interface LoginResponse {
+    token: string;
+    user: AdminUser;
+}
+
 export function AdminAuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<AdminUser | null>(null);
-    const [token, setToken] = useState<string | null>(() => localStorage.getItem('admin_token'));
+    const [user, setUser] = useState<AdminUser | null>(() => getStoredUser());
+    const [token, setToken] = useState<string | null>(() => getStoredToken());
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const storedToken = localStorage.getItem('admin_token');
-        const storedUser = localStorage.getItem('admin_user');
+        const storedToken = getStoredToken();
+        const storedUser = getStoredUser();
 
-        if (storedToken && storedUser) {
+        if (storedToken && storedUser && !isTokenExpired(storedToken)) {
             setToken(storedToken);
-            setUser(JSON.parse(storedUser));
-            api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
+            setUser(storedUser);
+        } else {
+            clearStoredSession();
+            setToken(null);
+            setUser(null);
         }
+
+        const handleAuthLogout = () => {
+            clearStoredSession();
+            setToken(null);
+            setUser(null);
+        };
+
+        window.addEventListener('auth:logout', handleAuthLogout);
         setIsLoading(false);
+
+        return () => {
+            window.removeEventListener('auth:logout', handleAuthLogout);
+        };
     }, []);
 
     const login = async (email: string, password: string) => {
         try {
-            const response = await api.post('/auth/login', { email, password });
-            const { token, user } = response.data;
+            const response = await apiClient.post<LoginResponse>('/auth/login', { email, password });
+            const nextToken = response.data.token;
+            const nextUser = response.data.user;
 
-            localStorage.setItem('admin_token', token);
-            localStorage.setItem('admin_user', JSON.stringify(user));
+            if (isTokenExpired(nextToken)) {
+                throw new Error('Token recebido já está expirado.');
+            }
 
-            setToken(token);
-            setUser(user);
-            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            setStoredSession(nextToken, nextUser);
+
+            setToken(nextToken);
+            setUser(nextUser);
         } catch (error) {
-            localStorage.removeItem('admin_token');
-            localStorage.removeItem('admin_user');
+            clearStoredSession();
             setToken(null);
             setUser(null);
             throw error;
@@ -52,11 +81,19 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
     };
 
     const logout = () => {
-        localStorage.removeItem('admin_token');
-        localStorage.removeItem('admin_user');
+        clearStoredSession();
         setToken(null);
         setUser(null);
-        delete api.defaults.headers.common['Authorization'];
+    };
+
+    const isAuthenticated = useMemo(() => {
+        if (!token || !user) return false;
+        return !isTokenExpired(token);
+    }, [token, user]);
+
+    const hasRole = (role: string) => {
+        if (!user?.role) return false;
+        return user.role.toUpperCase() === role.toUpperCase();
     };
 
     return (
@@ -65,7 +102,8 @@ export function AdminAuthProvider({ children }: { children: ReactNode }) {
             token,
             login,
             logout,
-            isAuthenticated: !!token,
+            isAuthenticated,
+            hasRole,
             isLoading
         }}>
             {children}

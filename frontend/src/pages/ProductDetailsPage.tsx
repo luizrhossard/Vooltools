@@ -2,7 +2,8 @@
 import { Link, useParams } from 'react-router-dom';
 import '../App.css';
 import './ProductDetailsPage.css';
-import { api } from '../lib/api';
+import { ApiErrorNotice } from '../components/ApiErrorNotice';
+import { apiClient, getApiErrorMessage } from '../lib/apiClient';
 import { sanitizeProductText } from '../lib/text';
 import { useCart } from '../contexts/CartContext';
 import { CartDrawer } from '../components/CartDrawer';
@@ -117,22 +118,25 @@ export function ProductDetailsPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState<string>('');
   const [failedImages, setFailedImages] = useState<string[]>([]);
 
   useEffect(() => {
     if (!id) return;
+    setLoading(true);
+    setLoadError(null);
 
     Promise.all([
-      api.get(`/products/${id}`).then((res) => res.data),
-      api.get('/products').then((res) => res.data)
+      apiClient.get<Product>(`/products/${id}`).then((res) => res.data),
+      apiClient.get<Product[]>('/products').then((res) => res.data)
     ])
       .then(([productData, productsData]) => {
         setProduct(sanitizeProductText(productData));
         setProducts(productsData.map((item: Product) => sanitizeProductText(item)));
       })
-      .catch((error) => {
-        console.error('Erro ao carregar detalhes do produto:', error);
+      .catch((error: unknown) => {
+        setLoadError(getApiErrorMessage(error, 'Não foi possível carregar os detalhes do produto.'));
       })
       .finally(() => setLoading(false));
   }, [id]);
@@ -209,6 +213,17 @@ export function ProductDetailsPage() {
 
   if (loading) {
     return <div className="pdp-loading">Carregando produto...</div>;
+  }
+
+  if (loadError) {
+    return (
+      <main className="pdp-page">
+        <div className="cw" style={{ marginTop: '40px' }}>
+          <ApiErrorNotice message={loadError} onRetry={() => window.location.reload()} />
+          <Link to="/">Voltar para a loja</Link>
+        </div>
+      </main>
+    );
   }
 
   if (!product || !pricing) {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../lib/api';
+import { ApiErrorNotice } from '../../components/ApiErrorNotice';
+import { apiClient, getApiErrorMessage } from '../../lib/apiClient';
 import type { Product, Category } from '../../types/product';
 import './Products.css';
 
@@ -7,6 +8,7 @@ export function AdminProducts() {
     const [products, setProducts] = useState<Product[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [formData, setFormData] = useState({
@@ -26,11 +28,12 @@ export function AdminProducts() {
     }, []);
 
     const loadProducts = async () => {
+        setErrorMessage(null);
         try {
-            const response = await api.get('/products');
+            const response = await apiClient.get<Product[]>('/products');
             setProducts(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar produtos:', error);
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao carregar produtos.'));
         } finally {
             setIsLoading(false);
         }
@@ -38,10 +41,10 @@ export function AdminProducts() {
 
     const loadCategories = async () => {
         try {
-            const response = await api.get('/categories');
+            const response = await apiClient.get<Category[]>('/categories');
             setCategories(response.data);
-        } catch (error) {
-            console.error('Erro ao carregar categorias:', error);
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao carregar categorias.'));
         }
     };
 
@@ -91,41 +94,41 @@ export function AdminProducts() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorMessage(null);
         
         const payload = {
             name: formData.name,
             description: formData.description,
             price: parseFloat(formData.price),
-            stockQuantity: parseInt(formData.stockQuantity),
+            stockQuantity: parseInt(formData.stockQuantity, 10),
             sku: formData.sku,
             imageUrl: formData.imageUrl,
-            category: { id: parseInt(formData.categoryId) },
+            category: { id: parseInt(formData.categoryId, 10) },
             featured: formData.featured,
         };
 
         try {
             if (editingProduct) {
-                await api.put(`/products/${editingProduct.id}`, payload);
+                await apiClient.put(`/products/${editingProduct.id}`, payload);
             } else {
-                await api.post('/products', payload);
+                await apiClient.post('/products', payload);
             }
-            loadProducts();
+            await loadProducts();
             closeModal();
-        } catch (error) {
-            console.error('Erro ao salvar produto:', error);
-            alert('Erro ao salvar produto. Verifique os dados e tente novamente.');
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao salvar produto. Verifique os dados e tente novamente.'));
         }
     };
 
     const handleDelete = async (id: number) => {
         if (!confirm('Tem certeza que deseja excluir este produto?')) return;
+        setErrorMessage(null);
 
         try {
-            await api.delete(`/products/${id}`);
-            loadProducts();
-        } catch (error) {
-            console.error('Erro ao excluir produto:', error);
-            alert('Erro ao excluir produto.');
+            await apiClient.delete(`/products/${id}`);
+            await loadProducts();
+        } catch (error: unknown) {
+            setErrorMessage(getApiErrorMessage(error, 'Erro ao excluir produto.'));
         }
     };
 
@@ -150,6 +153,10 @@ export function AdminProducts() {
                     Novo Produto
                 </button>
             </div>
+
+            {errorMessage ? (
+                <ApiErrorNotice message={errorMessage} onRetry={() => window.location.reload()} />
+            ) : null}
 
             <div className="table-container">
                 <table className="data-table">

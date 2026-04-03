@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
-import { api } from '../../lib/api';
+import { ApiErrorNotice } from '../../components/ApiErrorNotice';
+import { apiClient, getApiErrorMessage } from '../../lib/apiClient';
 import type { DashboardStats } from '../../types/product';
 import './Dashboard.css';
 
 export function AdminDashboard() {
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
-        api.get('/admin/stats')
+        setErrorMessage(null);
+        apiClient.get<DashboardStats>('/admin/stats')
             .then(response => setStats(response.data))
-            .catch(console.error)
+            .catch((error: unknown) => {
+                setErrorMessage(getApiErrorMessage(error, 'Erro ao carregar o dashboard.'));
+            })
             .finally(() => setIsLoading(false));
     }, []);
 
@@ -64,6 +69,10 @@ export function AdminDashboard() {
                 <h1>Dashboard</h1>
                 <p>Visão geral da sua loja</p>
             </div>
+
+            {errorMessage ? (
+                <ApiErrorNotice message={errorMessage} onRetry={() => window.location.reload()} />
+            ) : null}
 
             <div className="stats-grid">
                 {statCards.map((card) => (
